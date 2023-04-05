@@ -58,42 +58,43 @@ def db() -> Session:
     return next(get_test_db())
 
 
+def get_test_access_token_header(client: TestClient, user: User) -> dict:
+    response = client.post(
+        "/token",
+        data={"username": user.username, "password": f"password{user.id}"},
+    )
+    assert response.status_code == 200
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
 class TestException(Exception):
     ...
 
 
-class TestUser(User):
-    MAX_INSTANCES = 5
-    count = 1
-    int_map = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
+class ModelFactory:
+    def __init__(self) -> None:
+        self.MAX_INSTANCES = 5
+        self.count = {User.__name__: 0}
+        self.int_map = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five"}
 
-    def __init__(self, main_currency, *args, **kwargs) -> None:
-        if TestUser.count <= TestUser.MAX_INSTANCES:
-            super().__init__(
-                username=f"username{TestUser.count}",
-                password=f"password{TestUser.count}",
-                email=f"email{TestUser.count}@gmail.com",
-                first_name=f"first_{TestUser.int_map[TestUser.count]}",
-                last_name=f"last_{TestUser.int_map[TestUser.count]}",
+    def create_user(self, main_currency, *args, **kwargs) -> User:
+        if self.count[User.__name__] <= self.MAX_INSTANCES:
+            self.count[User.__name__] += 1
+            return User(
+                id=self.count[User.__name__],
+                username=f"username{self.count[User.__name__]}",
+                password=f"password{self.count[User.__name__]}",
+                email=f"email{self.count[User.__name__]}@gmail.com",
+                first_name=f"first_{self.int_map[self.count[User.__name__]]}",
+                last_name=f"last_{self.int_map[self.count[User.__name__]]}",
                 main_currency=main_currency,
             )
-            self.instance_number = TestUser.count
-            TestUser.count += 1
         else:
             raise TestException(
-                f"Maximum number of {TestUser.__name__} instances reached"
+                f"Maximum number of {ModelFactory.__name__} instances reached"
             )
 
 
-@pytest.fixture(autouse=True)
-def reset_test_models() -> None:
-    TestUser.count = 1
-
-
-def get_test_access_token_header(client: TestClient, user: "TestUser") -> dict:
-    response = client.post(
-        "/token",
-        data={"username": user.username, "password": f"password{user.instance_number}"},
-    )
-    assert response.status_code == 200
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+@pytest.fixture()
+def model_factory() -> ModelFactory:
+    return ModelFactory()

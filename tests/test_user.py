@@ -2,11 +2,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import api.schemas as s
-from tests.conftest import TestUser, get_test_access_token_header
+from tests.conftest import ModelFactory, get_test_access_token_header
 
 
-def test_token(client: TestClient, db: Session) -> None:
-    user_1 = TestUser("EUR")
+def test_token(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+    user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
 
@@ -15,7 +15,7 @@ def test_token(client: TestClient, db: Session) -> None:
         "/token",
         data={
             "username": user_1.username,
-            "password": f"password{user_1.instance_number}",
+            "password": f"password{user_1.id}",
         },
     )
     assert response.status_code == 200
@@ -31,8 +31,8 @@ def test_token(client: TestClient, db: Session) -> None:
     assert response.status_code == 404
 
 
-def test_current_user(client: TestClient, db: Session) -> None:
-    user_1 = TestUser("EUR")
+def test_current_user(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+    user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
 
@@ -46,9 +46,9 @@ def test_current_user(client: TestClient, db: Session) -> None:
     assert response.status_code == 401
 
 
-def test_create_user(client: TestClient) -> None:
-    user_1 = TestUser("EUR")
-    user_2 = TestUser("EUR")
+def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
+    user_1 = model_factory.create_user("EUR")
+    user_2 = model_factory.create_user("EUR")
 
     # correct data
     response = client.post(
@@ -56,7 +56,7 @@ def test_create_user(client: TestClient) -> None:
         json=dict(
             username=user_1.username,
             email=user_1.email,
-            password=f"password{user_1.instance_number}",
+            password=f"password{user_1.id}",
             first_name=user_1.first_name,
             last_name=user_1.last_name,
             main_currency=user_1.main_currency,
@@ -71,7 +71,7 @@ def test_create_user(client: TestClient) -> None:
         json=dict(
             username=user_1.username,  # Pre-existing user
             email=user_2.email,
-            password=f"password{user_2.instance_number}",
+            password=f"password{user_2.id}",
             first_name=user_2.first_name,
             last_name=user_2.last_name,
             main_currency=user_2.main_currency,
@@ -86,7 +86,7 @@ def test_create_user(client: TestClient) -> None:
         json=dict(
             username=user_2.username,
             email=user_1.email,  # Pre-existing user
-            password=f"password{user_2.instance_number}",
+            password=f"password{user_2.id}",
             first_name=user_2.first_name,
             last_name=user_2.last_name,
             main_currency=user_2.main_currency,
@@ -96,8 +96,8 @@ def test_create_user(client: TestClient) -> None:
     assert response.json()["detail"] == "E-mail address is already used"
 
 
-def test_modify_current_user(client: TestClient, db: Session) -> None:
-    user_1 = TestUser("CZK")
+def test_modify_current_user(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+    user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
     header = get_test_access_token_header(client, user_1)
@@ -135,15 +135,15 @@ def test_modify_current_user(client: TestClient, db: Session) -> None:
     assert response.json()["details"]["username"] == "extra fields not permitted"
 
 
-def test_change_password(client: TestClient, db: Session) -> None:
-    user_1 = TestUser("CZK")
+def test_change_password(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+    user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
     header = get_test_access_token_header(client, user_1)
 
     # correct data
     body_1 = dict(
-        old_password=f"password{user_1.instance_number}",
+        old_password=f"password{user_1.id}",
         new_password="changed_password",
         repeat_password="changed_password",
     )
@@ -156,7 +156,7 @@ def test_change_password(client: TestClient, db: Session) -> None:
 
     # passwords do not match
     body_2 = dict(
-        old_password=f"password{user_1.instance_number}",
+        old_password=f"password{user_1.id}",
         new_password="changed_password",
         repeat_password="wrong_password",
     )
@@ -166,7 +166,7 @@ def test_change_password(client: TestClient, db: Session) -> None:
 
     # incomplete body
     body_3 = dict(
-        old_password=f"password{user_1.instance_number}",
+        old_password=f"password{user_1.id}",
         new_password="changed_password",
     )
     response = client.put("/user/password", headers=header, json=body_3)
