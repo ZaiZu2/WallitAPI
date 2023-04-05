@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -24,11 +24,19 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    token_expired_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="The access token has expired",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
     try:
         payload = jwt.decode(token, get_config().SECRET_KEY, ["HS256"])
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
+    except ExpiredSignatureError:
+        raise token_expired_exception
     except JWTError:
         raise credentials_exception
 
@@ -39,7 +47,7 @@ def get_current_user(
     return user
 
 
-def create_token(user: d.User) -> str:
+def create_access_token(user: d.User) -> str:
     settings = get_config()
 
     expire = datetime.utcnow() + timedelta(minutes=settings.TOKEN_EXPIRATION_TIME)
