@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.session import close_all_sessions
 
-from api import create_app
+from wallitapi import create_app
 from config import Config, get_config
 from database.main import Base, get_db
 from database.models import User
