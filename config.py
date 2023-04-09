@@ -145,7 +145,6 @@ class CurrenciesEnum(str, Enum):
     USD = "USD"
     UYU = "UYU"
     UZS = "UZS"
-    VES = "VES"
     VND = "VND"
     VUV = "VUV"
     WST = "WST"
@@ -159,7 +158,6 @@ class CurrenciesEnum(str, Enum):
     YER = "YER"
     ZAR = "ZAR"
     ZMW = "ZMW"
-    ZWL = "ZWL"
 
 
 class Config(BaseSettings):

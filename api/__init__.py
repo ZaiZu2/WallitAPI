@@ -4,7 +4,7 @@ from enum import Enum
 class TagsEnum(str, Enum):
     USER = "USER"
     TRANSACTIONS = "TRANSACTIONS"
-
+    CATEGORIES = "CATEGORIES"
 
 tags_metadata = [
     {
@@ -14,5 +14,9 @@ tags_metadata = [
     {
         "name": TagsEnum.TRANSACTIONS,
         "description": "The operations used for managing transactions. CRUD operations, transaction filtering, etc.",
+    },
+    {
+        "name": TagsEnum.CATEGORIES,
+        "description": "The operations used for managing user's categories.",
     },
 ]
