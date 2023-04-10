@@ -8,8 +8,7 @@ router = APIRouter()
 async def request_validation_handler(
     response: Response, exc: RequestValidationError
 ) -> Response:
-    for error in exc.errors():
-        body = {error["loc"][1]: error["msg"]}
+    body = {error["loc"][1]: error["msg"] for error in exc.errors()}
 
     headers = getattr(exc, "headers", None)
     if headers:

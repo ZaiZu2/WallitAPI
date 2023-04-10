@@ -31,7 +31,9 @@ def test_token(client: TestClient, db: Session, model_factory: ModelFactory) -> 
     assert response.status_code == 404
 
 
-def test_current_user(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+def test_current_user(
+    client: TestClient, db: Session, model_factory: ModelFactory
+) -> None:
     user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
@@ -96,7 +98,9 @@ def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
     assert response.json()["detail"] == "E-mail address is already used"
 
 
-def test_modify_current_user(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+def test_modify_current_user(
+    client: TestClient, db: Session, model_factory: ModelFactory
+) -> None:
     user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
@@ -104,7 +108,7 @@ def test_modify_current_user(client: TestClient, db: Session, model_factory: Mod
 
     # correct data
     body_1 = dict(
-        first_name="changed_first_1", last_name="changed_last_1", main_currency="USD"
+        first_name="changedFirst", last_name="changedLast", main_currency="USD"
     )
     response = client.put(
         "/user",
@@ -115,7 +119,7 @@ def test_modify_current_user(client: TestClient, db: Session, model_factory: Mod
     assert response.json().items() >= body_1.items()
 
     # correct partial data
-    body_2 = dict(first_name="changed_first_2")
+    body_2 = dict(first_name="changedFirstAgain")
     response = client.put(
         "/user",
         headers=header,
@@ -135,7 +139,9 @@ def test_modify_current_user(client: TestClient, db: Session, model_factory: Mod
     assert response.json()["details"]["username"] == "extra fields not permitted"
 
 
-def test_change_password(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+def test_change_password(
+    client: TestClient, db: Session, model_factory: ModelFactory
+) -> None:
     user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()

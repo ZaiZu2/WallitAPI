@@ -13,13 +13,14 @@ from database.main import Base
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 class UpdatableMixin:
-    def update(self, data: dict) -> None:
+    def update(self, data: dict, *args: list, **kwargs: dict) -> None:
         for column, value in data.items():
             setattr(self, column, value)
 
 
-class User(UpdatableMixin, Base):
+class User(Base, UpdatableMixin):
     __tablename__ = "users"
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -58,7 +59,7 @@ class User(UpdatableMixin, Base):
     def __repr__(self) -> str:
         return f"{self.username}: {self.first_name} {self.last_name} under email: {self.email}"
 
-    def update(self, data: dict, db: Session) -> None:
+    def update(self, data: dict, db: Session, *args, **kwargs) -> None:
         if "main_currency" in data and data["main_currency"] != self.main_currency:
             for transaction in self.select_transactions(db):
                 transaction.convert_to_main_amount(data["main_currency"])
@@ -102,7 +103,7 @@ class User(UpdatableMixin, Base):
         )
 
 
-class Transaction(UpdatableMixin, Base):
+class Transaction(Base, UpdatableMixin):
     __tablename__ = "transactions"
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -120,16 +121,18 @@ class Transaction(UpdatableMixin, Base):
     category_id: so.Mapped[int] = so.mapped_column(
         sa.ForeignKey("categories.id"), index=True
     )
-    user_id: so.Mapped[int] = so.mapped_column(
+    user_id: so.Mapped[int | None] = so.mapped_column(
         sa.ForeignKey("users.id", ondelete="CASCADE")
     )
-    bank_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey("banks.id"))
+    bank_id: so.Mapped[int | None] = so.mapped_column(sa.ForeignKey("banks.id"))
 
-    category: so.Mapped[Category] = so.relationship(
+    category: so.Mapped[Category | None] = so.relationship(
         "Category", back_populates="transactions"
     )
     user: so.Mapped[User] = so.relationship("User", back_populates="transactions")
-    bank: so.Mapped[Bank] = so.relationship("Bank", back_populates="transactions")
+    bank: so.Mapped[Bank | None] = so.relationship(
+        "Bank", back_populates="transactions"
+    )
 
     def __init__(
         self,
@@ -137,7 +140,7 @@ class Transaction(UpdatableMixin, Base):
         base_currency: str,
         transaction_date: datetime,
         db: Session,
-        **kwargs,
+        **kwargs: dict,
     ) -> None:
         super(Transaction, self).__init__(
             base_amount=base_amount,
@@ -150,7 +153,7 @@ class Transaction(UpdatableMixin, Base):
     def __repr__(self) -> str:
         return f"Transaction: {self.base_amount} {self.base_currency} on {self.transaction_date}"
 
-    def update(self, db: Session, data: dict) -> None:
+    def update(self, data: dict, db: Session, *args, **kwargs) -> None:
         super(self.__class__, self).update(data)
         if "base_amount" in data or "base_currency" in data:
             self.convert_to_main_amount(db)
@@ -172,8 +175,8 @@ class Transaction(UpdatableMixin, Base):
         self.main_amount = round(self.base_amount * exchange_rate, 2)
 
     @classmethod
-    def get_from_id(cls, id: int, user: User) -> Transaction | None:
-        return cls.query.filter_by(id=id, user=user).first()
+    def get_from_id(cls, id: int, user: User, db: Session) -> Transaction | None:
+        return db.query(cls).filter_by(id=id, user=user).first()
 
 
 class MyBanks(Enum):
@@ -231,9 +234,9 @@ class Category(Base, UpdatableMixin):
         return f"Category: {self.name}"
 
     @classmethod
-    def get_from_id(cls, category_id: int, user: User, db: Session) -> Category | None:
+    def get_from_id(cls, id: int, user: User, db: Session) -> Category | None:
         """Query for Category with an id"""
-        return db.query(cls).filter_by(id=category_id, user=user).first()
+        return db.query(cls).filter_by(id=id, user=user).first()
 
 
 class ExchangeRate(Base, UpdatableMixin):

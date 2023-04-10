@@ -1,15 +1,22 @@
-from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
-
-from api import user
-from api.error_handlers import request_validation_handler
+from enum import Enum
 
 
-def create_app() -> FastAPI:
-    app = FastAPI()
+class TagsEnum(str, Enum):
+    USER = "USER"
+    TRANSACTIONS = "TRANSACTIONS"
+    CATEGORIES = "CATEGORIES"
 
-    app.include_router(user.router)
-
-    app.add_exception_handler(RequestValidationError, request_validation_handler)
-
-    return app
+tags_metadata = [
+    {
+        "name": TagsEnum.USER,
+        "description": "The operations related to the user's account. The login and password logic is contained here.",
+    },
+    {
+        "name": TagsEnum.TRANSACTIONS,
+        "description": "The operations used for managing transactions. CRUD operations, transaction filtering, etc.",
+    },
+    {
+        "name": TagsEnum.CATEGORIES,
+        "description": "The operations used for managing user's categories.",
+    },
+]
