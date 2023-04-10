@@ -1,11 +1,12 @@
+from pathlib import Path
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from pathlib import Path
 
-from config import LOGGING_CONFIG
-from api import user, transactions, categories, tags_metadata
+from api import categories, tags_metadata, transactions, user
 from api.error_handlers import request_validation_handler
+from config import LOGGING_CONFIG
 
 
 def create_app() -> FastAPI:

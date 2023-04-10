@@ -3,9 +3,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from api import TagsEnum
 import api.schemas as s
 import database.models as d
+from api import TagsEnum
 from api.auth import authenticate_user, create_access_token, get_current_user
 from database.main import get_db
 

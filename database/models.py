@@ -15,12 +15,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UpdatableMixin:
-    def update(self, data: dict) -> None:
+    def update(self, data: dict, *args: list, **kwargs: dict) -> None:
         for column, value in data.items():
             setattr(self, column, value)
 
 
-class User(Base):
+class User(Base, UpdatableMixin):
     __tablename__ = "users"
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -59,7 +59,7 @@ class User(Base):
     def __repr__(self) -> str:
         return f"{self.username}: {self.first_name} {self.last_name} under email: {self.email}"
 
-    def update(self, data: dict, db: Session) -> None:
+    def update(self, data: dict, db: Session, *args, **kwargs) -> None:
         if "main_currency" in data and data["main_currency"] != self.main_currency:
             for transaction in self.select_transactions(db):
                 transaction.convert_to_main_amount(data["main_currency"])
@@ -103,7 +103,7 @@ class User(Base):
         )
 
 
-class Transaction(Base):
+class Transaction(Base, UpdatableMixin):
     __tablename__ = "transactions"
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
@@ -130,7 +130,9 @@ class Transaction(Base):
         "Category", back_populates="transactions"
     )
     user: so.Mapped[User] = so.relationship("User", back_populates="transactions")
-    bank: so.Mapped[Bank | None] = so.relationship("Bank", back_populates="transactions")
+    bank: so.Mapped[Bank | None] = so.relationship(
+        "Bank", back_populates="transactions"
+    )
 
     def __init__(
         self,
@@ -151,7 +153,7 @@ class Transaction(Base):
     def __repr__(self) -> str:
         return f"Transaction: {self.base_amount} {self.base_currency} on {self.transaction_date}"
 
-    def update(self, data: dict, db: Session) -> None:
+    def update(self, data: dict, db: Session, *args, **kwargs) -> None:
         super(self.__class__, self).update(data)
         if "base_amount" in data or "base_currency" in data:
             self.convert_to_main_amount(db)

@@ -1,6 +1,8 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Extra, Field, validator
+
 import regex as re
+from pydantic import BaseModel, EmailStr, Extra, Field, validator
+
 from config import CurrenciesEnum
 
 # String must only contain alphanumeric characters and underscores
