@@ -166,7 +166,8 @@ class Config(BaseSettings):
         env_file_encoding = "utf-8"
 
     SECRET_KEY: str
-    TOKEN_EXPIRATION_TIME: int = 30  # minutes
+    ACCESS_TOKEN_EXPIRATION_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRATION_DAYS: int = 3
 
     SQLALCHEMY_DATABASE_URI: str
 

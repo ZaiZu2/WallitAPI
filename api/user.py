@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated
+
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -6,7 +8,13 @@ from sqlalchemy.orm import Session
 import api.schemas as s
 import database.models as d
 from api import TagsEnum
-from api.auth import authenticate_user, create_access_token, get_current_user
+from api.auth import (
+    authenticate_user,
+    create_access_token,
+    create_refresh_token,
+    get_current_user,
+    verify_refresh_token,
+)
 from database.main import get_db
 
 router = APIRouter(tags=[TagsEnum.USER])
@@ -14,7 +22,9 @@ router = APIRouter(tags=[TagsEnum.USER])
 
 @router.post("/token", response_model=s.Token)
 def get_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    response: Response,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
 ) -> s.Token:
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -23,13 +33,27 @@ def get_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    access_token = create_access_token(user)
+    refresh_token = create_refresh_token(user)
+    response.set_cookie(
+        "refresh_token",
+        refresh_token,
+        path=router.url_path_for("refresh_token"),
+        secure=True,
+        httponly=True,
+    )
 
-    return s.Token(access_token=create_access_token(user))
+    return s.Token(access_token=access_token)
 
 
-@router.get("/user")
-def current_user(user: d.User = Depends(get_current_user)) -> s.User:
-    return user
+@router.put("/token", response_model=s.Token)
+def refresh_token(
+    refresh_token: Annotated[str, Cookie()],
+    db: Session = Depends(get_db),
+) -> s.Token:
+    user = verify_refresh_token(refresh_token, db)
+    access_token = create_access_token(user)
+    return s.Token(access_token=access_token)
 
 
 @router.post("/user", response_model=s.User, status_code=status.HTTP_201_CREATED)
@@ -50,6 +74,11 @@ def create_user(data: s.UserCreate, db: Session = Depends(get_db)) -> s.User:
     db.commit()
 
     return new_user
+
+
+@router.get("/user")
+def current_user(user: d.User = Depends(get_current_user)) -> s.User:
+    return user
 
 
 @router.put("/user", response_model=s.User, status_code=status.HTTP_200_OK)
