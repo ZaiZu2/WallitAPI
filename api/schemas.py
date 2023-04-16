@@ -71,6 +71,10 @@ class UserModify(GeneralBaseModel):
     )
 
 
+class Password(GeneralBaseModel):
+    password: str
+
+
 class PasswordReset(GeneralBaseModel):
     old_password: str
     new_password: str = Field(..., min_length=5)

@@ -148,7 +148,7 @@ class Transaction(Base, UpdatableMixin):
             transaction_date=transaction_date,
             **kwargs,
         )
-        self.convert_to_main_amount(db)
+        self.convert_to_main_amount(db=db)
 
     def __repr__(self) -> str:
         return f"Transaction: {self.base_amount} {self.base_currency} on {self.transaction_date}"
@@ -156,7 +156,7 @@ class Transaction(Base, UpdatableMixin):
     def update(self, data: dict, db: Session, *args, **kwargs) -> None:
         super(self.__class__, self).update(data)
         if "base_amount" in data or "base_currency" in data:
-            self.convert_to_main_amount(db)
+            self.convert_to_main_amount(db=db)
 
     def convert_to_main_amount(
         self, db: Session, target_currency: str | None = None
@@ -191,10 +191,6 @@ class Bank(Base):
     name: so.Mapped[str] = so.mapped_column(sa.Text, index=True, unique=True)
     statement_type: so.Mapped[str] = so.mapped_column(sa.String(10))
     name_enum: so.Mapped[MyBanks] = so.mapped_column(unique=True)
-    # name_enum: so.Mapped[str] = so.mapped_column(
-    #     sa.Enum(MyBanks, values_callable=lambda enum: [x.value for x in enum]),
-    #     unique=True,
-    # )
 
     transactions: so.Mapped[int] = so.relationship(
         "Transaction", back_populates="bank", lazy=True, uselist=True

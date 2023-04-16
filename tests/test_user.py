@@ -15,7 +15,7 @@ def test_token(client: TestClient, db: Session, model_factory: ModelFactory) -> 
         "/token",
         data={
             "username": user_1.username,
-            "password": f"password{user_1.id}",
+            "password": "password1",
         },
     )
     assert response.status_code == 200
@@ -58,7 +58,7 @@ def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
         json=dict(
             username=user_1.username,
             email=user_1.email,
-            password=f"password{user_1.id}",
+            password=f"password1",
             first_name=user_1.first_name,
             last_name=user_1.last_name,
             main_currency=user_1.main_currency,
@@ -73,7 +73,7 @@ def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
         json=dict(
             username=user_1.username,  # Pre-existing user
             email=user_2.email,
-            password=f"password{user_2.id}",
+            password="password2",
             first_name=user_2.first_name,
             last_name=user_2.last_name,
             main_currency=user_2.main_currency,
@@ -88,7 +88,7 @@ def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
         json=dict(
             username=user_2.username,
             email=user_1.email,  # Pre-existing user
-            password=f"password{user_2.id}",
+            password=f"password2",
             first_name=user_2.first_name,
             last_name=user_2.last_name,
             main_currency=user_2.main_currency,
@@ -136,7 +136,28 @@ def test_modify_current_user(
         json=body_3,
     )
     assert response.status_code == 422
-    assert response.json()["details"]["username"] == "extra fields not permitted"
+    assert response.json()["body"]["username"] == ["extra fields not permitted"]
+    assert response.json()["body"]["email"] == ["extra fields not permitted"]
+
+
+# def test_delete_current_user(
+#     client: TestClient, db: Session, model_factory: ModelFactory
+# ) -> None:
+#     user_1 = model_factory.create_user("EUR")
+#     db.add(user_1)
+#     db.commit()
+#     header = get_test_access_token_header(client, user_1)
+
+#     # incorrect data
+#     body_1 = {"password": "password1"}
+#     response = client.delete("/user", headers=header, json=body_1)
+#     assert response.status_code == 401
+#     assert response.json() == "Incorrect password"
+
+#     # correct data
+#     body_2 = {"password": "password1"}
+#     response = client.delete("/user", headers=header, json=body_2)
+#     assert response.status_code == 204
 
 
 def test_change_password(
@@ -149,7 +170,7 @@ def test_change_password(
 
     # correct data
     body_1 = dict(
-        old_password=f"password{user_1.id}",
+        old_password=f"password1",
         new_password="changed_password",
         repeat_password="changed_password",
     )
@@ -162,19 +183,19 @@ def test_change_password(
 
     # passwords do not match
     body_2 = dict(
-        old_password=f"password{user_1.id}",
+        old_password=f"password1",
         new_password="changed_password",
         repeat_password="wrong_password",
     )
     response = client.put("/user/password", headers=header, json=body_2)
     assert response.status_code == 422
-    assert response.json()["details"]["repeat_password"] == "Passwords do not match"
+    assert response.json()["body"]["repeat_password"] == ["Passwords do not match"]
 
     # incomplete body
     body_3 = dict(
-        old_password=f"password{user_1.id}",
+        old_password=f"password1",
         new_password="changed_password",
     )
     response = client.put("/user/password", headers=header, json=body_3)
     assert response.status_code == 422
-    assert response.json()["details"]["repeat_password"] == "field required"
+    assert response.json()["body"]["repeat_password"] == ["field required"]
