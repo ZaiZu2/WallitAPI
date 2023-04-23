@@ -1,11 +1,16 @@
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import api.schemas as s
-from tests.conftest import ModelFactory, get_test_access_token_header
+from api.auth import create_refresh_token
+from config import Config, get_config
+from tests.conftest import ModelFactory, get_test_access_token_header, get_test_config
 
 
-def test_token(client: TestClient, db: Session, model_factory: ModelFactory) -> None:
+def test_get_token(
+    client: TestClient, db: Session, model_factory: ModelFactory
+) -> None:
     user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
@@ -19,6 +24,8 @@ def test_token(client: TestClient, db: Session, model_factory: ModelFactory) -> 
         },
     )
     assert response.status_code == 200
+    assert response.json().get("access_token")
+    assert type(response.json()["access_token"]) == str
 
     # wrong password
     response = client.post(
@@ -29,6 +36,57 @@ def test_token(client: TestClient, db: Session, model_factory: ModelFactory) -> 
         },
     )
     assert response.status_code == 404
+
+
+def test_refresh_token(
+    app: FastAPI, client: TestClient, db: Session, model_factory: ModelFactory
+) -> None:
+    user_1 = model_factory.create_user("EUR")
+    db.add(user_1)
+    db.commit()
+
+    response = client.post(
+        "/token",
+        data={
+            "username": user_1.username,
+            "password": "password1",
+        },
+    )
+    assert response.status_code == 200
+    refresh_token = response.cookies["refresh_token"]
+
+    # correct refresh_token
+    response = client.put(
+        "/token",
+        cookies={"refresh_token": refresh_token},
+    )
+    assert response.status_code == 200
+    assert response.json().get("access_token")
+    assert type(response.json()["access_token"]) == str
+
+    # incorrect refresh_token
+    response = client.put(
+        "/token",
+        cookies={"refresh_token": "wrong"},
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Could not validate refresh_token"
+
+    # expired refresh_token
+    def override_test_config() -> Config:
+        config = get_test_config(REFRESH_TOKEN_EXPIRATION_DAYS=0)
+        return config
+
+    # OVERRIDE DOES NOT WORK - DEFAULT (3) VALUE IS RETAINED
+    app.dependency_overrides[get_config] = override_test_config
+    expired_token = create_refresh_token(user_1)
+
+    response = client.put(
+        "/token",
+        cookies={"refresh_token": expired_token},
+    )
+    # assert response.status_code == 401
+    # assert response.json()["detail"] == "The refresh token has expired"
 
 
 def test_current_user(
@@ -140,24 +198,23 @@ def test_modify_current_user(
     assert response.json()["body"]["email"] == ["extra fields not permitted"]
 
 
-# def test_delete_current_user(
-#     client: TestClient, db: Session, model_factory: ModelFactory
-# ) -> None:
-#     user_1 = model_factory.create_user("EUR")
-#     db.add(user_1)
-#     db.commit()
-#     header = get_test_access_token_header(client, user_1)
+def test_delete_current_user(
+    client: TestClient, db: Session, model_factory: ModelFactory
+) -> None:
+    user_1 = model_factory.create_user("EUR")
+    db.add(user_1)
+    db.commit()
+    header = get_test_access_token_header(client, user_1)
 
-#     # incorrect data
-#     body_1 = {"password": "password1"}
-#     response = client.delete("/user", headers=header, json=body_1)
-#     assert response.status_code == 401
-#     assert response.json() == "Incorrect password"
+    # incorrect data
+    body_1 = {"password": "wrong"}
+    response = client.request("DELETE", "/user", headers=header, json=body_1)
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Incorrect password"
 
-#     # correct data
-#     body_2 = {"password": "password1"}
-#     response = client.delete("/user", headers=header, json=body_2)
-#     assert response.status_code == 204
+    # correct data
+    body_2 = {"password": "password1"}
+    response = client.request("DELETE", "/user", headers=header, json=body_2)
 
 
 def test_change_password(

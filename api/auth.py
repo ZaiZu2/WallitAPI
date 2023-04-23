@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
-from typing import Annotated
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
@@ -78,7 +77,7 @@ def create_refresh_token(user: d.User) -> str:
 def verify_refresh_token(refresh_token: str, db: Session = Depends(get_db)) -> d.User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate the credentials",
+        detail="Could not validate refresh_token",
         headers={"WWW-Authenticate": "Bearer"},
     )
 

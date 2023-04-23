@@ -41,6 +41,7 @@ def get_token(
         path=router.url_path_for("refresh_token"),
         secure=True,
         httponly=True,
+        samesite="strict",
     )
 
     return s.Token(access_token=access_token)
@@ -92,17 +93,17 @@ def modify_current_user(
     return user
 
 
-# @router.delete("/user", status_code=status.HTTP_204_NO_CONTENT)
-# def delete_current_user(
-#     data: s.Password,
-#     user: d.User = Depends(get_current_user),
-#     db: Session = Depends(get_db),
-# ) -> None:
-#     if not user.verify_password(data.password):
-#         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+@router.delete("/user", status_code=status.HTTP_204_NO_CONTENT)
+def delete_current_user(
+    data: s.Password,
+    user: d.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    if not user.verify_password(data.password):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Incorrect password")
 
-#     db.delete(user)
-#     db.commit()
+    db.delete(user)
+    db.commit()
 
 
 @router.put("/user/password", status_code=status.HTTP_200_OK)

@@ -15,11 +15,11 @@ from database.models import Bank, Category, Transaction, User
 from wallitapi import create_app
 
 
-@lru_cache()
-def get_test_config() -> Config:
+def get_test_config(**kwargs) -> Config:
     return Config(
         SECRET_KEY="test",
         SQLALCHEMY_DATABASE_URI="postgresql://test:test@localhost:5434/wallit_test",
+        **kwargs,
     )
 
 
