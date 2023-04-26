@@ -1,0 +1,29 @@
+# [build-system]
+# requires = ["setuptools", "setuptools-scm"]
+# build-backend = "setuptools.build_meta"
+
+# [project]
+# name = "WallitAPI"
+# version = "1.0.0"
+
+[tools.black]
+line-length = 88
+
+[tools.mypy]
+disallow_untyped_defs = true
+disallow_any_unimported = false
+ignore_missing_imports = true
+ignore_missing_imports_per_module = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = false
+show_error_codes = true
+warn_unused_ignores = true
+warn_unused_configs = true
+exclude = "^venv|migrations"
+
+[tools.ruff]
+select = ["E", "F", "B", "I", "W", "N", "D", "UP", "A", "C4", "PT"]
+
+[tools.pytest]
+testpaths = "tests"
