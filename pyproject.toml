@@ -1,11 +1,3 @@
-# [build-system]
-# requires = ["setuptools", "setuptools-scm"]
-# build-backend = "setuptools.build_meta"
-
-# [project]
-# name = "WallitAPI"
-# version = "1.0.0"
-
 [tools.black]
 line-length = 88
 
@@ -20,10 +12,17 @@ warn_return_any = false
 show_error_codes = true
 warn_unused_ignores = true
 warn_unused_configs = true
-exclude = "^venv|migrations"
+exclude = ["venv","venv_dev","venv_prod", "migrations"]
 
 [tools.ruff]
 select = ["E", "F", "B", "I", "W", "N", "D", "UP", "A", "C4", "PT"]
+line-length = 88
+extend-exclude = ["venv","venv_dev","venv_prod"]
+fix = true
+show-fixes = true
+
+[tool.ruff.flake8-comprehensions]
+allow-dict-calls-with-keyword-arguments = true
 
 [tools.pytest]
 testpaths = "tests"
