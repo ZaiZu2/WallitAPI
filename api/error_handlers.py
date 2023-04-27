@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Callable
 
 from fastapi import APIRouter, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -20,7 +19,9 @@ async def request_validation_handler(
     #         "param": "validation error message",
     #     },
     # }
-    _: Callable = lambda: defaultdict(list)
+    def _():
+        return defaultdict(list)
+
     body: dict[str, dict[str, list]] = defaultdict(_)
     for error in exc.errors():
         if len(error["loc"]) == 1:
