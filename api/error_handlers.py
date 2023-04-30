@@ -15,14 +15,14 @@ async def request_validation_handler(
     #     "body": {
     #         "field": "validation error message",
     #     },
-    #     "path": {
+    #     "path": {I
     #         "param": "validation error message",
     #     },
     # }
     def _():
         return defaultdict(list)
 
-    body: dict[str, dict[str, list]] = defaultdict(_)
+    body: dict[str | int, dict[str, list[str]]] = defaultdict(_)
     for error in exc.errors():
         if len(error["loc"]) == 1:
             # request validation error - request body missing
