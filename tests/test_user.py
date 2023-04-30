@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import api.schemas as s
-from api.auth import create_refresh_token
+from api.auth import create_access_token, create_refresh_token
 from config import Config, get_config
 from tests.conftest import ModelFactory, get_test_access_token_header, get_test_config
 
@@ -74,36 +74,52 @@ def test_refresh_token(
 
     # expired refresh_token
     def override_test_config() -> Config:
-        config = get_test_config(REFRESH_TOKEN_EXPIRATION_DAYS=0)
+        config = get_test_config()
+        config.REFRESH_TOKEN_EXPIRATION_DAYS = -1
         return config
 
-    # OVERRIDE DOES NOT WORK - DEFAULT (3) VALUE IS RETAINED
+    config = override_test_config()
     app.dependency_overrides[get_config] = override_test_config
-    expired_token = create_refresh_token(user_1)
+    expired_token = create_refresh_token(user_1, config)
 
     response = client.put(
         "/token",
         cookies={"refresh_token": expired_token},
     )
-    # assert response.status_code == 401
-    # assert response.json()["detail"] == "The refresh token has expired"
+    assert response.status_code == 401
+    assert response.json()["detail"] == "The refresh token has expired"
 
 
 def test_current_user(
-    client: TestClient, db: Session, model_factory: ModelFactory
+    app: FastAPI, client: TestClient, db: Session, model_factory: ModelFactory
 ) -> None:
     user_1 = model_factory.create_user("EUR")
     db.add(user_1)
     db.commit()
 
     # correct token
-    response = client.get("/user", headers=get_test_access_token_header(client, user_1))
+    header = get_test_access_token_header(client, user_1)
+    response = client.get("/user", headers=header)
     assert response.status_code == 200
     assert response.json() == s.User.from_orm(user_1).dict()
 
     # wrong token
-    response = client.get("/user", headers={"Authorization": f"Bearer wrong"})
+    response = client.get("/user", headers={"Authorization": "Bearer wrong"})
     assert response.status_code == 401
+
+    # expired access_token
+    def override_test_config() -> Config:
+        config = get_test_config()
+        config.ACCESS_TOKEN_EXPIRATION_MINUTES = -1
+        return config
+
+    app.dependency_overrides[get_config] = override_test_config
+    header = get_test_access_token_header(client, user_1)
+
+    response = client.get("/user", headers=header)
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "The access token has expired"
 
 
 def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
@@ -116,7 +132,7 @@ def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
         json=dict(
             username=user_1.username,
             email=user_1.email,
-            password=f"password1",
+            password="password1",
             first_name=user_1.first_name,
             last_name=user_1.last_name,
             main_currency=user_1.main_currency,

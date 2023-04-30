@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import database.models as d
-from config import get_config
+from config import Config, get_config
 from database.main import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -28,6 +28,7 @@ def authenticate_user(db: Session, username: str, password: str) -> d.User | Non
 def get_current_user(
     access_token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
+    config: Config = Depends(get_config),
 ) -> d.User | None:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -42,7 +43,7 @@ def get_current_user(
     )
 
     try:
-        payload = jwt.decode(access_token, get_config().SECRET_KEY, ["HS256"])
+        payload = jwt.decode(access_token, config.SECRET_KEY, ["HS256"])
         username = payload.get("sub")
     except ExpiredSignatureError:
         raise token_expired_exception
@@ -56,25 +57,21 @@ def get_current_user(
     return user
 
 
-def create_access_token(user: d.User) -> str:
-    settings = get_config()
-
+def create_access_token(user: d.User, config: Config) -> str:
     expire = datetime.utcnow() + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRATION_MINUTES
+        minutes=config.ACCESS_TOKEN_EXPIRATION_MINUTES
     )
-    data = {"sub": user.username, "expire": expire.isoformat()}
-    return jwt.encode(data, settings.SECRET_KEY, algorithm="HS256")
+    data = {"sub": user.username, "exp": expire}
+    return jwt.encode(data, config.SECRET_KEY, algorithm="HS256")
 
 
-def create_refresh_token(user: d.User) -> str:
-    settings = get_config()
-
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRATION_DAYS)
-    data = {"sub": user.username, "expire": expire.isoformat()}
-    return jwt.encode(data, settings.SECRET_KEY, algorithm="HS256")
+def create_refresh_token(user: d.User, config: Config) -> str:
+    expire = datetime.utcnow() + timedelta(days=config.REFRESH_TOKEN_EXPIRATION_DAYS)
+    data = {"sub": user.username, "exp": expire}
+    return jwt.encode(data, config.SECRET_KEY, algorithm="HS256")
 
 
-def verify_refresh_token(refresh_token: str, db: Session = Depends(get_db)) -> d.User:
+def verify_refresh_token(refresh_token: str, db: Session, config: Config) -> d.User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate refresh_token",
@@ -88,7 +85,7 @@ def verify_refresh_token(refresh_token: str, db: Session = Depends(get_db)) -> d
     )
 
     try:
-        payload = jwt.decode(refresh_token, get_config().SECRET_KEY, ["HS256"])
+        payload = jwt.decode(refresh_token, config.SECRET_KEY, ["HS256"])
         username = payload.get("sub")
     except ExpiredSignatureError:
         raise token_expired_exception
