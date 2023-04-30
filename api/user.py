@@ -15,6 +15,7 @@ from api.auth import (
     get_current_user,
     verify_refresh_token,
 )
+from config import Config, get_config
 from database.main import get_db
 
 router = APIRouter(tags=[TagsEnum.USER])
@@ -25,6 +26,7 @@ def get_token(
     response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
+    config: Config = Depends(get_config),
 ) -> s.Token:
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -33,8 +35,8 @@ def get_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(user)
-    refresh_token = create_refresh_token(user)
+    access_token = create_access_token(user, config)
+    refresh_token = create_refresh_token(user, config)
     response.set_cookie(
         "refresh_token",
         refresh_token,
@@ -49,11 +51,12 @@ def get_token(
 
 @router.put("/token", response_model=s.Token)
 def refresh_token(
-    refresh_token: Annotated[str, Cookie()],
+    refresh_token: str = Cookie(),
     db: Session = Depends(get_db),
+    config: Config = Depends(get_config),
 ) -> s.Token:
-    user = verify_refresh_token(refresh_token, db)
-    access_token = create_access_token(user)
+    user = verify_refresh_token(refresh_token, db, config)
+    access_token = create_access_token(user, config)
     return s.Token(access_token=access_token)
 
 
