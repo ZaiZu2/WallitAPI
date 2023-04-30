@@ -162,7 +162,7 @@ def test_create_user(client: TestClient, model_factory: ModelFactory) -> None:
         json=dict(
             username=user_2.username,
             email=user_1.email,  # Pre-existing user
-            password=f"password2",
+            password="password2",
             first_name=user_2.first_name,
             last_name=user_2.last_name,
             main_currency=user_2.main_currency,
@@ -243,7 +243,7 @@ def test_change_password(
 
     # correct data
     body_1 = dict(
-        old_password=f"password1",
+        old_password="password1",
         new_password="changed_password",
         repeat_password="changed_password",
     )
@@ -256,7 +256,7 @@ def test_change_password(
 
     # passwords do not match
     body_2 = dict(
-        old_password=f"password1",
+        old_password="password1",
         new_password="changed_password",
         repeat_password="wrong_password",
     )
@@ -266,7 +266,7 @@ def test_change_password(
 
     # incomplete body
     body_3 = dict(
-        old_password=f"password1",
+        old_password="password1",
         new_password="changed_password",
     )
     response = client.put("/user/password", headers=header, json=body_3)

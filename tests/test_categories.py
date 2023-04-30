@@ -51,11 +51,11 @@ def test_get_category(
     assert response.json() == s.Category.from_orm(category_1)
 
     # incorrect data
-    response = client.get(f"categories/432", headers=header)
+    response = client.get("categories/432", headers=header)
     assert response.status_code == 404
 
     # incorrect path param
-    response = client.get(f"categories/asdew", headers=header)
+    response = client.get("categories/asdew", headers=header)
     assert response.status_code == 422
     assert response.json()["path"]["id"] == ["value is not a valid integer"]
 
@@ -90,7 +90,7 @@ def test_modify_category(
     ]
 
     # incorrect path param
-    response = client.put(f"categories/asdew", headers=header, json=body_1)
+    response = client.put("categories/asdew", headers=header, json=body_1)
     assert response.status_code == 422
     assert response.json()["path"]["id"] == ["value is not a valid integer"]
 
@@ -116,7 +116,7 @@ def test_delete_category(
     assert response.status_code == 204
 
     # incorrect path param
-    response = client.delete(f"categories/asdew", headers=header)
+    response = client.delete("categories/asdew", headers=header)
     assert response.status_code == 422
     assert response.json()["path"]["id"] == ["value is not a valid integer"]
 
