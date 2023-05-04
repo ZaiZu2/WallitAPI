@@ -3,7 +3,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-
+from fastapi_pagination import add_pagination
 from api import categories, main, tags_metadata, transactions, user
 from api.error_handlers import request_validation_handler
 from config import LOGGING_CONFIG
@@ -20,7 +20,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, request_validation_handler)
 
     Path("./logs").mkdir(exist_ok=True)
-
+    add_pagination(app)
     return app
 
 

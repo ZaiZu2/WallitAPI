@@ -17,6 +17,7 @@ warn_unused_ignores = true
 [tools.ruff]
 extend-exclude = ["venv", "venv_dev", "venv_prod"]
 fix = true
+ignore = ["E501"]
 line-length = 88
 select = ["E", "F", "B", "I", "W", "N", "D", "UP", "A", "C4", "PT"]
 show-fixes = true

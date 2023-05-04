@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, with_parent
 
 from database.main import Base
+from api.exceptions import RatesUnavailableError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -80,7 +81,7 @@ class User(Base, UpdatableMixin):
 
     def select_categories(self, db: Session) -> list[Category]:
         return list(
-            db.scalars(select(Category).where(with_parent(self, User.categories))).all()
+            db.scalars(select(Category).filter(Category.user.has(id=self.id))).all()
         )
 
     def select_banks(self, db: Session) -> list[Bank]:
@@ -256,5 +257,8 @@ class ExchangeRate(Base, UpdatableMixin):
     ) -> float:
         source_rate = db.query(cls).filter_by(date=date.date(), source=source).scalar()
         target_rate = db.query(cls).filter_by(date=date.date(), source=target).scalar()
+
+        if not source_rate or not target_rate:
+            raise RatesUnavailableError(source, target, date)
 
         return (1 / source_rate.rate) * target_rate.rate

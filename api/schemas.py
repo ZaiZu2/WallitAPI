@@ -2,6 +2,7 @@ from datetime import datetime
 
 import regex as re
 from pydantic import BaseModel, EmailStr, Extra, Field, validator
+from typing import Generic, TypeVar, Sequence
 
 from config import CurrenciesEnum
 
@@ -175,3 +176,13 @@ class TransactionModify(GeneralBaseModel):
             value.date() < datetime.utcnow().date()
         ), "Transactions can only be set on for the past days"
         return value
+
+
+T = TypeVar("T", User, Transaction, Category, Bank)
+
+
+class Paginated(Generic[T], GeneralBaseModel):
+    items: Sequence[T]
+    total: int
+    limit: int
+    offset: int

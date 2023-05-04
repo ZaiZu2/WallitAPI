@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import api.schemas as s
-from api.auth import create_access_token, create_refresh_token
+from api.auth import create_refresh_token
 from config import Config, get_config
 from tests.conftest import ModelFactory, get_test_access_token_header, get_test_config
 

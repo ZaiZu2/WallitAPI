@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_pagination.ext.sqlalchemy import paginate
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from fastapi_pagination import LimitOffsetPage
 
 import api.schemas as s
 import database.models as d
@@ -20,6 +23,15 @@ def create_transaction(
     db.add(transaction)
     db.commit()
     return transaction
+
+
+@router.get("/", status_code=status.HTTP_200_OK)
+def get_transactions(
+    user: d.User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> LimitOffsetPage[s.Transaction]:
+    return paginate(
+        db, select(d.Transaction).filter(d.Transaction.user.has(id=user.id))
+    )
 
 
 @router.get("/{id}", status_code=status.HTTP_200_OK)
